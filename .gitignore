@@ -1,0 +1,8 @@
+# generated artifacts
+quality_history.csv
+freshness_history.csv
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
