@@ -1,0 +1,10 @@
+# External dependencies NOT managed by pip:
+#
+# 1. GCS Connector JAR (for Spark to write to GCS)
+#    Path: ~/de_learning/bulan_3/retailco-modern-data-stack/jars/gcs-connector.jar
+#    Compatible with: PySpark 3.5.6
+#
+# 2. GCP Service Account Key (for Spark GCS authentication)
+#    Path: ~/de_learning/bulan_3/keys/najma-de-learning-key.json
+#    Project: najma-de-learning
+#    Note: never commit this file to GitHub

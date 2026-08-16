@@ -1,0 +1,19 @@
+# Virtual environment
+venv_dq/
+
+# Data files
+data/orders.csv
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# GCP credentials — NEVER commit
+*.json
+keys/
+
+# Spark
+derby.log
+metastore_db/
