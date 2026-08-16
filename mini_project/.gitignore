@@ -17,3 +17,5 @@ keys/
 # Spark
 derby.log
 metastore_db/
+.env
+.env
