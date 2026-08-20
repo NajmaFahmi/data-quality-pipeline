@@ -13,6 +13,9 @@ from google.cloud import storage
 from io import StringIO
 import os
 
+from src.contract_loader import ContractLoader
+from src.contract_enforcer import ContractEnforcer
+
 from jobs.gcs_uploader import upload_to_bronze
 from gates.gate1_validator import run_gate1
 from gates.gate2_anomaly import run_gate2
@@ -59,12 +62,6 @@ GCS_KEY_PATH = os.path.expanduser(
 # ─────────────────────────────────────────────
 # GATE 1 + GATE 4 CONFIG (Great Expectations)
 # ─────────────────────────────────────────────
-REQUIRED_COLUMNS = [
-    "order_id", "customer_id", "product_id",
-    "quantity", "unit_price", "total_amount",
-    "order_date", "status", "customer_email",
-]
-
 EXPECTED_TYPES = {
     "quantity":     "numeric",
     "unit_price":   "numeric",
@@ -72,12 +69,6 @@ EXPECTED_TYPES = {
     "order_id":     "string",
     "status":       "string",
 }
-
-NON_NULLABLE_COLUMNS = [
-    "order_id", "quantity", "unit_price",
-    "total_amount", "order_date", "status",
-]
-
 
 # ─────────────────────────────────────────────
 # GATE 2 CONFIG (Anomaly Detection)
@@ -121,12 +112,15 @@ DATE_COLUMNS        = ["order_date"]
 ### =================== PIPELINE ===================
 
 def run_pipeline() -> None:
-    from src.contract_loader import ContractLoader
-
+    # Load Data Contract
     contract = ContractLoader(CONTRACT_PATH).load()
     print(f"[INFO] Loaded contract: {contract.name} v{contract.version}")
     print(f"[INFO] Owner: {contract.owner}")
     print(f"[INFO] Schema columns: {[col.name for col in contract.schema]}")
+
+    # Check Data Contract
+    contract_enforcer = ContractEnforcer(contract)
+    contract_enforcer.check_breaking_change()
 
     print("=" * 55)
     print("ORDERS PIPELINE — START")
@@ -150,9 +144,9 @@ def run_pipeline() -> None:
     gate1_result = run_gate1(
         bucket_name=BUCKET_NAME,
         blob_path=BRONZE_BLOB,
-        required_columns=[col.name for col in contract.schema],
+        required_columns=contract_enforcer.get_required_columns(),
         expected_types=EXPECTED_TYPES,
-        non_nullable_columns=[col.name for col in contract.schema if not col.nullable],
+        non_nullable_columns=contract_enforcer.get_non_nullable_columns(),
         suite_name="orders_gate1_suite",
         datasource_name="orders_gate1_source",
         asset_name="orders_gate1_asset",
@@ -201,9 +195,7 @@ def run_pipeline() -> None:
     dimension_scores = {
         "completeness": measure_completeness(
             clean_df,
-            columns=["order_id", "customer_id", "product_id",
-                     "quantity", "unit_price", "total_amount",
-                     "order_date", "status", "customer_email"],
+            columns=contract_enforcer.get_required_columns(),
         ),
         "validity": measure_validity(
             clean_df,
@@ -235,7 +227,7 @@ def run_pipeline() -> None:
         ),
         "uniqueness": measure_uniqueness(
             clean_df,
-            subset=["order_id"],
+            subset=contract_enforcer.get_quality_thresholds()["uniqueness_columns"],
         ),
         "timeliness": measure_timeliness(
             latest_timestamp=pd.to_datetime(clean_df["order_date"]).max(),
@@ -280,9 +272,9 @@ def run_pipeline() -> None:
 
     gate4_result = run_gate4(
         df=silver_df,
-        required_columns=[col.name for col in contract.schema],
+        required_columns=contract_enforcer.get_required_columns(),
         expected_types=EXPECTED_TYPES,
-        non_nullable_columns=[col.name for col in contract.schema if not col.nullable],
+        non_nullable_columns=contract_enforcer.get_non_nullable_columns(),
         suite_name="orders_gate4_suite",
         datasource_name="orders_gate4_source",
         asset_name="orders_gate4_asset",

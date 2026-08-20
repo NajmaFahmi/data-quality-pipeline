@@ -36,6 +36,8 @@ class DataContract:
     schema: list[ColumnSpec]
     sla: SLASpec
     quality: QualitySpec
+    breaking_change: bool = False 
+    previous_version: str = ""
 
 
 
@@ -113,4 +115,6 @@ class ContractLoader:
             schema=schema,
             sla=sla,
             quality=quality,
+            breaking_change=raw.get("breaking_change", False),
+            previous_version=raw.get("previous_version", ""),
         )
