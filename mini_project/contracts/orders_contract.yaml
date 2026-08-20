@@ -1,0 +1,56 @@
+contract:
+  name: orders_pipeline
+  version: 1.0.0
+  owner: data-platform-team
+  description: "Contract for retail orders data flowing from Bronze to Gold"
+  effective_date: "2026-08-19"
+
+  producer:
+    system: retailco-raw-najma
+    layer: bronze
+    path: "gs://retailco-raw-najma/orders/"
+
+  consumer:
+    role: analyst
+    layer: gold
+    destination: bigquery
+
+  schema:
+  - name: order_id
+    type: string
+    nullable: false
+  - name: customer_id
+    type: string
+    nullable: false
+  - name: product_id
+    type: string
+    nullable: false
+  - name: quantity
+    type: integer
+    nullable: false
+  - name: unit_price
+    type: float
+    nullable: false
+  - name: total_amount
+    type: float
+    nullable: false
+  - name: order_date
+    type: timestamp
+    nullable: false
+  - name: status
+    type: string
+    nullable: false
+  - name: customer_email
+    type: string
+    nullable: true
+
+  sla:
+    freshness_hours: 24
+    delivery_time: "07:00"
+    timezone: "Asia/Jakarta"
+
+  quality:
+    completeness_threshold: 0.95
+    uniqueness_columns:
+      - order_id
+    accuracy_threshold: 0.90

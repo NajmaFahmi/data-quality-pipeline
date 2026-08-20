@@ -37,6 +37,7 @@ from src.quality_scorer import (
 # INFRASTRUCTURE CONFIG
 # ─────────────────────────────────────────────
 LOCAL_CSV_PATH = "data/orders.csv"
+CONTRACT_PATH = "contracts/orders_contract.yaml"
 
 BUCKET_NAME = "retailco-raw-najma"
 BQ_PROJECT = "najma-de-learning"
@@ -120,6 +121,13 @@ DATE_COLUMNS        = ["order_date"]
 ### =================== PIPELINE ===================
 
 def run_pipeline() -> None:
+    from src.contract_loader import ContractLoader
+
+    contract = ContractLoader(CONTRACT_PATH).load()
+    print(f"[INFO] Loaded contract: {contract.name} v{contract.version}")
+    print(f"[INFO] Owner: {contract.owner}")
+    print(f"[INFO] Schema columns: {[col.name for col in contract.schema]}")
+
     print("=" * 55)
     print("ORDERS PIPELINE — START")
     print(f"Run at: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
@@ -142,9 +150,9 @@ def run_pipeline() -> None:
     gate1_result = run_gate1(
         bucket_name=BUCKET_NAME,
         blob_path=BRONZE_BLOB,
-        required_columns=REQUIRED_COLUMNS,
+        required_columns=[col.name for col in contract.schema],
         expected_types=EXPECTED_TYPES,
-        non_nullable_columns=NON_NULLABLE_COLUMNS,
+        non_nullable_columns=[col.name for col in contract.schema if not col.nullable],
         suite_name="orders_gate1_suite",
         datasource_name="orders_gate1_source",
         asset_name="orders_gate1_asset",
@@ -231,7 +239,7 @@ def run_pipeline() -> None:
         ),
         "timeliness": measure_timeliness(
             latest_timestamp=pd.to_datetime(clean_df["order_date"]).max(),
-            sla_hours=24.0,
+            sla_hours=contract.sla.freshness_hours,
         ),
     }
 
@@ -272,9 +280,9 @@ def run_pipeline() -> None:
 
     gate4_result = run_gate4(
         df=silver_df,
-        required_columns=REQUIRED_COLUMNS,
+        required_columns=[col.name for col in contract.schema],
         expected_types=EXPECTED_TYPES,
-        non_nullable_columns=NON_NULLABLE_COLUMNS,
+        non_nullable_columns=[col.name for col in contract.schema if not col.nullable],
         suite_name="orders_gate4_suite",
         datasource_name="orders_gate4_source",
         asset_name="orders_gate4_asset",
