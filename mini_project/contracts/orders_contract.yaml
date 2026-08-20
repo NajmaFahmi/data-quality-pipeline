@@ -53,4 +53,4 @@ contract:
     completeness_threshold: 0.95
     uniqueness_columns:
       - order_id
-    accuracy_threshold: 0.90
+    accuracy_threshold: 0.90# trigger CI
