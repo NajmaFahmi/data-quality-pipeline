@@ -1,0 +1,36 @@
+name: Contract Validation
+
+on:
+  push:
+    paths:
+      - "contracts/**"
+      - "src/contract_loader.py"
+      - "src/contract_enforcer.py"
+      - "tests/test_contract_loader.py"
+  pull_request:
+    paths:
+      - "contracts/**"
+      - "src/contract_loader.py"
+      - "src/contract_enforcer.py"
+      - "tests/test_contract_loader.py"
+
+jobs:
+  validate-contract:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    
+    - name: Install dependencies
+      run: |
+        pip install pytest pyyaml
+    
+    - name: Run contract validation tests 
+      run: |
+        pytest tests/test_contract_loader.py -v
