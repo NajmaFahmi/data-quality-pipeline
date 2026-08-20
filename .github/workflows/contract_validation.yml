@@ -3,16 +3,16 @@ name: Contract Validation
 on:
   push:
     paths:
-      - "contracts/**"
-      - "src/contract_loader.py"
-      - "src/contract_enforcer.py"
-      - "tests/test_contract_loader.py"
+      - "mini_project/contracts/**"
+      - "mini_project/src/contract_loader.py"
+      - "mini_project/src/contract_enforcer.py"
+      - "mini_project/tests/test_contract_loader.py"
   pull_request:
     paths:
-      - "contracts/**"
-      - "src/contract_loader.py"
-      - "src/contract_enforcer.py"
-      - "tests/test_contract_loader.py"
+      - "mini_project/contracts/**"
+      - "mini_project/src/contract_loader.py"
+      - "mini_project/src/contract_enforcer.py"
+      - "mini_project/tests/test_contract_loader.py"
 
 jobs:
   validate-contract:
@@ -31,6 +31,7 @@ jobs:
       run: |
         pip install pytest pyyaml
     
-    - name: Run contract validation tests 
+    - name: Run contract validation tests
       run: |
+        cd mini_project
         pytest tests/test_contract_loader.py -v
